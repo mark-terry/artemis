@@ -43,6 +43,9 @@ public class AttestationData implements SimpleOffsetSerializable, Merkleizable, 
   private final Checkpoint source;
   private final Checkpoint target;
 
+  private Bytes32 head_shard_root;
+  private Bytes32 shard_transition_root;
+
   public AttestationData(
       UnsignedLong slot,
       UnsignedLong index,
@@ -62,6 +65,16 @@ public class AttestationData implements SimpleOffsetSerializable, Merkleizable, 
     this.beacon_block_root = attestationData.getBeacon_block_root();
     this.source = new Checkpoint(attestationData.getSource());
     this.target = new Checkpoint(attestationData.getTarget());
+  }
+
+  public AttestationData(UnsignedLong slot, UnsignedLong index, Bytes32 beacon_block_root, Checkpoint source, Checkpoint target, Bytes32 head_shard_root, Bytes32 shard_transition_root) {
+    this.slot = slot;
+    this.index = index;
+    this.beacon_block_root = beacon_block_root;
+    this.source = source;
+    this.target = target;
+    this.head_shard_root = head_shard_root;
+    this.shard_transition_root = shard_transition_root;
   }
 
   @Override
@@ -137,5 +150,21 @@ public class AttestationData implements SimpleOffsetSerializable, Merkleizable, 
             HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, beacon_block_root),
             source.hash_tree_root(),
             target.hash_tree_root()));
+  }
+
+  public Bytes32 getHead_shard_root() {
+    return head_shard_root;
+  }
+
+  public void setHead_shard_root(Bytes32 head_shard_root) {
+    this.head_shard_root = head_shard_root;
+  }
+
+  public Bytes32 getShard_transition_root() {
+    return shard_transition_root;
+  }
+
+  public void setShard_transition_root(Bytes32 shard_transition_root) {
+    this.shard_transition_root = shard_transition_root;
   }
 }

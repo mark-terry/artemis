@@ -21,6 +21,9 @@ import tech.pegasys.artemis.util.bls.BLSSignature;
 
 public class Constants {
 
+  //Shard Constants
+  public static final long MAX_SHARD_BLOCKS_PER_ATTESTATION = 12;
+
   // Non-configurable constants
   public static UnsignedLong FAR_FUTURE_EPOCH = UnsignedLong.MAX_VALUE;
   public static int BASE_REWARDS_PER_EPOCH = 4;

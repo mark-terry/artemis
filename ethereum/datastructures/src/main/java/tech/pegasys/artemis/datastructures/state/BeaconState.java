@@ -79,6 +79,8 @@ public class BeaconState implements Merkleizable, SimpleOffsetSerializable, SSZC
   protected Checkpoint current_justified_checkpoint;
   protected Checkpoint finalized_checkpoint;
 
+  protected List<Integer> online_countdown;
+
   public BeaconState(
       // Versioning
       UnsignedLong genesis_time,
@@ -114,7 +116,8 @@ public class BeaconState implements Merkleizable, SimpleOffsetSerializable, SSZC
       Bitvector justification_bits,
       Checkpoint previous_justified_checkpoint,
       Checkpoint current_justified_checkpoint,
-      Checkpoint finalized_checkpoint) {
+      Checkpoint finalized_checkpoint,
+      List<Integer> online_countdown) {
     // Versioning
     this.genesis_time = genesis_time;
     this.slot = slot;
@@ -150,6 +153,7 @@ public class BeaconState implements Merkleizable, SimpleOffsetSerializable, SSZC
     this.previous_justified_checkpoint = previous_justified_checkpoint;
     this.current_justified_checkpoint = current_justified_checkpoint;
     this.finalized_checkpoint = finalized_checkpoint;
+    this.online_countdown = online_countdown;
   }
 
   public BeaconState() {
@@ -525,6 +529,14 @@ public class BeaconState implements Merkleizable, SimpleOffsetSerializable, SSZC
 
   public void setFinalized_checkpoint(Checkpoint finalized_checkpoint) {
     this.finalized_checkpoint = finalized_checkpoint;
+  }
+
+  public List<Integer> getOnline_countdown() {
+    return online_countdown;
+  }
+
+  public void setOnline_countdown(List<Integer> online_countdown) {
+    this.online_countdown = online_countdown;
   }
 
   public void incrementSlot() {

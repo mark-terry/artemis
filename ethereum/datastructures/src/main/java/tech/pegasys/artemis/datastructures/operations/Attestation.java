@@ -18,11 +18,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import tech.pegasys.artemis.datastructures.util.SimpleOffsetSerializer;
 import tech.pegasys.artemis.util.SSZTypes.Bitlist;
 import tech.pegasys.artemis.util.SSZTypes.SSZContainer;
+import tech.pegasys.artemis.util.SSZTypes.SSZList;
 import tech.pegasys.artemis.util.bls.BLSSignature;
 import tech.pegasys.artemis.util.config.Constants;
 import tech.pegasys.artemis.util.hashtree.HashTreeUtil;
@@ -39,25 +42,25 @@ public class Attestation
 
   private Bitlist aggregation_bits; // Bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
   private AttestationData data;
-  private Bitlist custody_bitfield; // Bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
+  private SSZList<Bitlist> custody_bits; // Bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
   private BLSSignature signature;
 
   public Attestation(
       Bitlist aggregation_bits,
       AttestationData data,
-      Bitlist custody_bitfield,
+      SSZList<Bitlist> custody_bits,
       BLSSignature signature) {
     this.aggregation_bits = aggregation_bits;
     this.data = data;
-    this.custody_bitfield = custody_bitfield;
+    this.custody_bits = custody_bits;
     this.signature = signature;
   }
 
   public Attestation() {
     this.aggregation_bits =
         new Bitlist(Constants.MAX_VALIDATORS_PER_COMMITTEE, Constants.MAX_VALIDATORS_PER_COMMITTEE);
-    this.custody_bitfield =
-        new Bitlist(Constants.MAX_VALIDATORS_PER_COMMITTEE, Constants.MAX_VALIDATORS_PER_COMMITTEE);
+    this.custody_bits = new SSZList<Bitlist>(Bitlist.class, Constants.MAX_SHARD_BLOCKS_PER_ATTESTATION);
+    for(Bitlist bitlist: custody_bits)bitlist = new Bitlist(Constants.MAX_VALIDATORS_PER_COMMITTEE, Constants.MAX_VALIDATORS_PER_COMMITTEE);
   }
 
   @Override
@@ -88,16 +91,16 @@ public class Attestation
     // TODO The below lines are a hack while Tuweni SSZ/SOS is being upgraded. To be uncommented
     // once we shift from Bitlist to a real bitlist type.
     // Bitlist serialized_custody_bitfield =
-    // Bitlist.fromHexString("0x01").shiftLeft(aggregation_bits.bitLength()).or(custody_bitfield);
+    // Bitlist.fromHexString("0x01").shiftLeft(aggregation_bits.bitLength()).or(custody_bits);
     // variablePartsList.addAll(List.of(serialized_custody_bitfield));
-    variablePartsList.addAll(List.of(custody_bitfield.serialize()));
+    variablePartsList.addAll(custody_bits.stream().map(item -> item.serialize()).collect(Collectors.toList()));
     variablePartsList.addAll(Collections.nCopies(signature.getSSZFieldCount(), Bytes.EMPTY));
     return variablePartsList;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(aggregation_bits, data, custody_bitfield, signature);
+    return Objects.hash(aggregation_bits, data, custody_bits, signature);
   }
 
   @Override
@@ -117,7 +120,7 @@ public class Attestation
     Attestation other = (Attestation) obj;
     return Objects.equals(this.getAggregation_bits(), other.getAggregation_bits())
         && Objects.equals(this.getData(), other.getData())
-        && Objects.equals(this.getCustody_bitfield(), other.getCustody_bitfield())
+        && Objects.equals(this.getCustody_bits(), other.getCustody_bits())
         && Objects.equals(this.getAggregate_signature(), other.getAggregate_signature());
   }
 
@@ -138,14 +141,6 @@ public class Attestation
     this.data = data;
   }
 
-  public Bitlist getCustody_bitfield() {
-    return custody_bitfield;
-  }
-
-  public void setCustody_bitfield(Bitlist custody_bitfield) {
-    this.custody_bitfield = custody_bitfield;
-  }
-
   public BLSSignature getAggregate_signature() {
     return signature;
   }
@@ -154,23 +149,35 @@ public class Attestation
     this.signature = aggregate_signature;
   }
 
+  public SSZList<Bitlist> getCustody_bits() {
+    return custody_bits;
+  }
+
+  public void setCustody_bits(SSZList<Bitlist> custody_bits) {
+    this.custody_bits = custody_bits;
+  }
+
   @Override
   public Bytes32 signing_root(String truncation_param) {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            HashTreeUtil.hash_tree_root_bitlist(aggregation_bits),
-            data.hash_tree_root(),
-            HashTreeUtil.hash_tree_root_bitlist(custody_bitfield)));
+    return null;
+    //TODO
+//    return HashTreeUtil.merkleize(
+//        Arrays.asList(
+//            HashTreeUtil.hash_tree_root_bitlist(aggregation_bits),
+//            data.hash_tree_root(),
+//            HashTreeUtil.hash_tree_root_bitlist(custody_bits)));
   }
 
   @Override
   public Bytes32 hash_tree_root() {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            HashTreeUtil.hash_tree_root_bitlist(aggregation_bits),
-            data.hash_tree_root(),
-            HashTreeUtil.hash_tree_root_bitlist(custody_bitfield),
-            HashTreeUtil.hash_tree_root(
-                SSZTypes.VECTOR_OF_BASIC, SimpleOffsetSerializer.serialize(signature))));
+    return null;
+    //TODO
+//    return HashTreeUtil.merkleize(
+//        Arrays.asList(
+//            HashTreeUtil.hash_tree_root_bitlist(aggregation_bits),
+//            data.hash_tree_root(),
+//            HashTreeUtil.hash_tree_root_bitlist(custody_bits),
+//            HashTreeUtil.hash_tree_root(
+//                SSZTypes.VECTOR_OF_BASIC, SimpleOffsetSerializer.serialize(signature))));
   }
 }
