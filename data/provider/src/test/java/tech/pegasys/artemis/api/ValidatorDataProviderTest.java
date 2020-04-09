@@ -37,10 +37,12 @@ import tech.pegasys.artemis.api.schema.BLSPubKey;
 import tech.pegasys.artemis.api.schema.BLSSignature;
 import tech.pegasys.artemis.api.schema.BeaconBlock;
 import tech.pegasys.artemis.api.schema.BeaconState;
+import tech.pegasys.artemis.api.schema.SignedBeaconBlock;
 import tech.pegasys.artemis.api.schema.ValidatorDuties;
 import tech.pegasys.artemis.api.schema.ValidatorDutiesRequest;
 import tech.pegasys.artemis.datastructures.operations.AttestationData;
 import tech.pegasys.artemis.datastructures.util.DataStructureUtil;
+import tech.pegasys.artemis.statetransition.blockimport.BlockImporter;
 import tech.pegasys.artemis.storage.client.ChainDataUnavailableException;
 import tech.pegasys.artemis.storage.client.CombinedChainDataClient;
 import tech.pegasys.artemis.util.SSZTypes.Bitlist;
@@ -57,8 +59,9 @@ public class ValidatorDataProviderTest {
   private final DataStructureUtil dataStructureUtil = new DataStructureUtil();
   private CombinedChainDataClient combinedChainDataClient = mock(CombinedChainDataClient.class);
   private final ValidatorApiChannel validatorApiChannel = mock(ValidatorApiChannel.class);
+  private final BlockImporter blockImporter = mock(BlockImporter.class);
   private ValidatorDataProvider provider =
-      new ValidatorDataProvider(validatorApiChannel, combinedChainDataClient);
+      new ValidatorDataProvider(validatorApiChannel, blockImporter, combinedChainDataClient);
   private final tech.pegasys.artemis.datastructures.blocks.BeaconBlock blockInternal =
       dataStructureUtil.randomBeaconBlock(123);
   private final BeaconBlock block = new BeaconBlock(blockInternal);
@@ -281,6 +284,19 @@ public class ValidatorDataProviderTest {
 
     assertThatThrownBy(() -> provider.submitAttestation(attestation))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void submitSignedBlock_shouldTakeAPIAndSubmitInternal() {
+    final tech.pegasys.artemis.datastructures.blocks.SignedBeaconBlock internalBlock =
+        dataStructureUtil.randomSignedBeaconBlock(1);
+    final SignedBeaconBlock apiBlock = new SignedBeaconBlock(internalBlock);
+    final tech.pegasys.artemis.datastructures.blocks.SignedBeaconBlock convertedBlock =
+        apiBlock.asInternalSignedBeaconBlock();
+
+    provider.submitSignedBlock(apiBlock);
+
+    verify(blockImporter).importBlock(convertedBlock);
   }
 
   private List<BLSPubKey> generatePublicKeys(final int count) {

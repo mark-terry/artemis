@@ -26,8 +26,12 @@ import tech.pegasys.artemis.api.schema.AttestationData;
 import tech.pegasys.artemis.api.schema.BLSPubKey;
 import tech.pegasys.artemis.api.schema.BLSSignature;
 import tech.pegasys.artemis.api.schema.BeaconBlock;
+import tech.pegasys.artemis.api.schema.SignedBeaconBlock;
+import tech.pegasys.artemis.api.schema.ValidatorBlockResult;
 import tech.pegasys.artemis.api.schema.ValidatorDuties;
 import tech.pegasys.artemis.api.schema.ValidatorDutiesRequest;
+import tech.pegasys.artemis.statetransition.blockimport.BlockImportResult;
+import tech.pegasys.artemis.statetransition.blockimport.BlockImporter;
 import tech.pegasys.artemis.storage.client.ChainDataUnavailableException;
 import tech.pegasys.artemis.storage.client.CombinedChainDataClient;
 import tech.pegasys.artemis.util.async.SafeFuture;
@@ -38,12 +42,15 @@ import tech.pegasys.artemis.validator.api.ValidatorDuties.Duties;
 public class ValidatorDataProvider {
   private final ValidatorApiChannel validatorApiChannel;
   private CombinedChainDataClient combinedChainDataClient;
+  private final BlockImporter blockImporter;
 
   public ValidatorDataProvider(
       final ValidatorApiChannel validatorApiChannel,
+      final BlockImporter blockImporter,
       final CombinedChainDataClient combinedChainDataClient) {
     this.validatorApiChannel = validatorApiChannel;
     this.combinedChainDataClient = combinedChainDataClient;
+    this.blockImporter = blockImporter;
   }
 
   public boolean isStoreAvailable() {
@@ -133,5 +140,26 @@ public class ValidatorDataProvider {
       throw new IllegalArgumentException("Signed attestations must have a non zero signature");
     }
     validatorApiChannel.sendSignedAttestation(attestation.asInternalAttestation());
+  }
+
+  public ValidatorBlockResult submitSignedBlock(final SignedBeaconBlock signedBeaconBlock) {
+    final BlockImportResult blockImportResult =
+        blockImporter.importBlock(signedBeaconBlock.asInternalSignedBeaconBlock());
+    int responseCode;
+
+    if (!blockImportResult.isSuccessful()) {
+      if (blockImportResult.getFailureReason() == BlockImportResult.FailureReason.INTERNAL_ERROR) {
+        responseCode = 500;
+      } else {
+        responseCode = 202;
+      }
+    } else {
+      responseCode = 200;
+    }
+
+    return new ValidatorBlockResult(
+        responseCode,
+        blockImportResult.getFailureCause(),
+        Optional.ofNullable(blockImportResult.getBlock().getMessage().hash_tree_root()));
   }
 }
